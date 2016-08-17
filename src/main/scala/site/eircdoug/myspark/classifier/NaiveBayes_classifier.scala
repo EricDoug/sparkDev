@@ -1,20 +1,19 @@
 package site.eircdoug.myspark.classifier
 
-import org.apache.spark.mllib.classification.LogisticRegressionWithSGD
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.mllib.classification.NaiveBayes
 
 /**
-  * Created by ericdoug on 16-8-2.
+  * Created by ericdoug on 16-8-17.
   */
-object Logistic_classifier {
-
+object NaiveBayes_classifier {
 
   def main(args: Array[String]) {
-    // 数据处理
+
     val conf = new SparkConf()
-      .setAppName("logistic_classifier")
+      .setAppName("naivebayes_classifier")
       .setMaster("local")
     val sc = new SparkContext(conf)
 
@@ -29,41 +28,42 @@ object Logistic_classifier {
       *         数据清洗和处理           *
       **********************************/
 
-    val data = records.map { r =>
+    val nbdata = records.map { r =>
       val trimmed = r.map(_.replaceAll("\"", ""))
       val label = trimmed(r.size - 1).toInt
       val features = trimmed.slice(4, r.size - 1).map(d => if(d == "?") 0.0 else d.toDouble)
+        .map(d => if(d < 0) 0.0 else d)
       LabeledPoint(label, Vectors.dense(features))
     }
 
-    data.cache()
-    val numData = data.count()
+    nbdata.cache()
+    val numData = nbdata.count()
     println("trainning data number: " + numData)
 
-    /***************************
-      *    构建Logistic模型     *
-      **************************/
+    /*****************************
+      *    构建NaiveBayes模型     *
+      ***************************/
     val numIterations = 10
-    val lrModel = LogisticRegressionWithSGD.train(data, numIterations)
+    val naivebayesModel = NaiveBayes.train(nbdata, numIterations)
 
 
     /***********************
       *     模型验证        *
       **********************/
-    val dataPoint = data.first()
-    val prediction = lrModel.predict(dataPoint.features)
+    val dataPoint = nbdata.first()
+    val prediction = naivebayesModel.predict(dataPoint.features)
 
     println("The prediction:" + prediction)
     println("The truth:" + dataPoint.label)
 
     // 正确率
-    val lrTotalCorrect = data.map { point =>
-      if(lrModel.predict(point.features) == point.label) 1 else 0
+    val naivebayesTotalCorrect = nbdata.map { point =>
+      if(naivebayesModel.predict(point.features) == point.label) 1 else 0
     }.sum()
 
-    val lrAccuracy = lrTotalCorrect / data.count
+    val naivebayesAccuracy = naivebayesTotalCorrect / nbdata.count
 
-    println("Accuracy:" + lrAccuracy)
+    println("Accuracy:" + naivebayesAccuracy)
 
     if(sc != null) {
       sc.stop()

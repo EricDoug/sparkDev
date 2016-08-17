@@ -1,20 +1,21 @@
 package site.eircdoug.myspark.classifier
 
-import org.apache.spark.mllib.classification.LogisticRegressionWithSGD
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.tree.DecisionTree
+import org.apache.spark.mllib.tree.configuration.Algo
+import org.apache.spark.mllib.tree.impurity.Entropy
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
-  * Created by ericdoug on 16-8-2.
+  * Created by ericdoug on 16-8-17.
   */
-object Logistic_classifier {
-
+object DecisionTree_classifier {
 
   def main(args: Array[String]) {
-    // 数据处理
+
     val conf = new SparkConf()
-      .setAppName("logistic_classifier")
+      .setAppName("decisiontree_classifier")
       .setMaster("local")
     val sc = new SparkContext(conf)
 
@@ -40,33 +41,37 @@ object Logistic_classifier {
     val numData = data.count()
     println("trainning data number: " + numData)
 
-    /***************************
-      *    构建Logistic模型     *
-      **************************/
+    /******************************
+      *    构建DecisionTree模型    *
+      *****************************/
     val numIterations = 10
-    val lrModel = LogisticRegressionWithSGD.train(data, numIterations)
+    val maxTreeDepth = 10
+    val decisiontreeModel = DecisionTree.train(data, Algo.Classification, Entropy, maxTreeDepth)
+
 
 
     /***********************
       *     模型验证        *
       **********************/
     val dataPoint = data.first()
-    val prediction = lrModel.predict(dataPoint.features)
+    val prediction = decisiontreeModel.predict(dataPoint.features)
 
     println("The prediction:" + prediction)
     println("The truth:" + dataPoint.label)
 
     // 正确率
-    val lrTotalCorrect = data.map { point =>
-      if(lrModel.predict(point.features) == point.label) 1 else 0
+    val decisiontreeTotalCorrect = data.map { point =>
+      if(decisiontreeModel.predict(point.features) == point.label) 1 else 0
     }.sum()
 
-    val lrAccuracy = lrTotalCorrect / data.count
+    val decisiontreeAccuracy = decisiontreeTotalCorrect / data.count
 
-    println("Accuracy:" + lrAccuracy)
+    println("Accuracy:" + decisiontreeAccuracy)
 
     if(sc != null) {
       sc.stop()
     }
+
   }
+
 }

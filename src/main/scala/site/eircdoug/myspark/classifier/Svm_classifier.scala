@@ -1,20 +1,19 @@
 package site.eircdoug.myspark.classifier
 
-import org.apache.spark.mllib.classification.LogisticRegressionWithSGD
+import org.apache.spark.mllib.classification.SVMWithSGD
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
-  * Created by ericdoug on 16-8-2.
+  * Created by ericdoug on 16-8-17.
   */
-object Logistic_classifier {
-
+object Svm_classifier {
 
   def main(args: Array[String]) {
-    // 数据处理
+
     val conf = new SparkConf()
-      .setAppName("logistic_classifier")
+      .setAppName("svm_classifier")
       .setMaster("local")
     val sc = new SparkContext(conf)
 
@@ -28,7 +27,6 @@ object Logistic_classifier {
     /***********************************
       *         数据清洗和处理           *
       **********************************/
-
     val data = records.map { r =>
       val trimmed = r.map(_.replaceAll("\"", ""))
       val label = trimmed(r.size - 1).toInt
@@ -41,29 +39,28 @@ object Logistic_classifier {
     println("trainning data number: " + numData)
 
     /***************************
-      *    构建Logistic模型     *
+      *    构建SVM模型     *
       **************************/
     val numIterations = 10
-    val lrModel = LogisticRegressionWithSGD.train(data, numIterations)
-
+    val svmModel = SVMWithSGD.train(data, numIterations)
 
     /***********************
       *     模型验证        *
       **********************/
     val dataPoint = data.first()
-    val prediction = lrModel.predict(dataPoint.features)
+    val prediction = svmModel.predict(dataPoint.features)
 
     println("The prediction:" + prediction)
     println("The truth:" + dataPoint.label)
 
     // 正确率
-    val lrTotalCorrect = data.map { point =>
-      if(lrModel.predict(point.features) == point.label) 1 else 0
+    val svmTotalCorrect = data.map { point =>
+      if(svmModel.predict(point.features) == point.label) 1 else 0
     }.sum()
 
-    val lrAccuracy = lrTotalCorrect / data.count
+    val svmAccuracy = svmTotalCorrect / data.count
 
-    println("Accuracy:" + lrAccuracy)
+    println("Accuracy:" + svmAccuracy)
 
     if(sc != null) {
       sc.stop()
